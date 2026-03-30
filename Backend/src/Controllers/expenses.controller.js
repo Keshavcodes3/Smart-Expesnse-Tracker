@@ -1,6 +1,6 @@
 import expenseModel from "../Models/expenses.model";
 import userModel from "../Models/user.model";
-
+import mongoose from 'mongoose'
 export const addExpense = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -26,12 +26,12 @@ export const addExpense = async (req, res) => {
             })
         }
         const expense = await expenseModel.create({
-            userId: req.user.id,
+            userId: new mongoose.Types.ObjectId(req.user.id),
             amount: amounts,
             category,
             note,
             type
-        })
+        });
         const userExpense = await userModel.findById(userId).select('+totalMoney +totalIncome +totalExpense')
         if (type === 'income') {
             userExpense.totalIncome += amounts
@@ -88,3 +88,63 @@ export const getSummery = async (req, res) => {
         })
     }
 }
+
+
+export const getDashboard = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        console.log("User ID:", userId);
+
+        const allExpenses = await expenseModel.find({ userId: new mongoose.Types.ObjectId(userId) });
+        console.log("Expenses:", allExpenses);
+        const Summery = await userModel.findById(userId).select('+totalMoney +totalIncome +totalExpense')
+        const total = Summery.totalMoney
+
+        let totalIncome = Summery.totalIncome;
+        let totalExpense = Summery.totalExpense;
+
+        const balance = totalIncome - totalExpense;
+
+        const recent = await expenseModel
+            .find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        //  category breakdown
+        const categoryData = await expenseModel.aggregate([
+            {
+                $match: {
+                    userId: new mongoose.Types.ObjectId(userId),
+                    type: 'expense'
+                }
+            },
+            {
+                $group: {
+                    _id: '$category',
+                    total: { $sum: '$amount' }
+                }
+            }
+        ]);
+
+        const categoryBreakdown = {};
+        categoryData.forEach(item => {
+            categoryBreakdown[item._id] = item.total;
+        });
+
+        return res.status(200).json({
+            success: true,
+            balance,
+            totalIncome,
+            totalExpense,
+            recentExpenses: recent,
+            categoryBreakdown
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            message: "Internal Server Error",
+            error: err.message,
+            success: false
+        });
+    }
+};

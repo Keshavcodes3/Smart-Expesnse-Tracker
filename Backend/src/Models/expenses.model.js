@@ -1,22 +1,24 @@
 import mongoose from "mongoose";
 
-
 const expensesSchema = new mongoose.Schema({
-    userID: {
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
+        ref: "User",
+        required: true
     },
-    
+
     amount: {
         type: Number,
         required: [true, "Amount is required"],
         min: [0, "Amount can't be negative"]
     },
+
     type: {
         type: String,
         enum: ['expense', 'income'],
         required: true
     },
+
     category: {
         type: String,
         required: true,
@@ -30,17 +32,19 @@ const expensesSchema = new mongoose.Schema({
             "other"
         ]
     },
-    note:{
-        type:String,
-        default:"",
+
+    note: {
+        type: String,
+        default: "",
     },
-    Date:{
-        type:Date,
-        default:Date.now()
+
+    date: {
+        type: Date,
+        default: Date.now
     }
-},{timestamps:true})
 
+}, { timestamps: true });
 
-const expenseModel=mongoose.model('expenses',expensesSchema)
+const expenseModel = mongoose.model('Expense', expensesSchema);
 
-export default expenseModel
+export default expenseModel;
