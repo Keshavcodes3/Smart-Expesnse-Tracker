@@ -8,7 +8,6 @@ import blackListModel from "../Models/blackList.model";
 export const registerUser = async (req, res) => {
     try {
         const { fullname, email, password } = req.body;
-        const user = await createUser({ fullname, email, password });
         const isAlreadyExist = await userModel.findOne({ email })
         if (isAlreadyExist) {
             return res.status(401).json({
@@ -17,6 +16,8 @@ export const registerUser = async (req, res) => {
                 success: false
             })
         }
+        
+        const user = await createUser({ fullname, email, password });
         const userObj = user.toObject();
         delete userObj.password;
         const token = jwt.sign(
